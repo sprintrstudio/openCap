@@ -10,15 +10,7 @@
     "beforeBuildCommand": "npm run build"
   },
   "app": {
-    "windows": [
-      {
-        "title": "OpenCap",
-        "width": 400,
-        "height": 300,
-        "resizable": false,
-        "visible": false
-      }
-    ],
+    "windows": [],
     "security": {
       "csp": null
     }
@@ -32,6 +24,13 @@
       "icons/128x128@2x.png",
       "icons/icon.icns",
       "icons/icon.ico"
-    ]
+    ],
+    "shortDescription": "Lightweight, open-source, private screenshot tool",
+    "category": "Utility",
+    "windows": {
+      "nsis": {
+        "installMode": "currentUser"
+      }
+    }
   }
 }

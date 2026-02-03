@@ -1,11 +1,11 @@
 mod capture;
 mod clipboard;
 mod storage;
-mod tray;
 
 use image::RgbaImage;
 use std::sync::Mutex;
 use tauri::Manager;
+use tauri::WebviewWindowBuilder;
 
 pub struct PendingCapture(pub Mutex<Option<RgbaImage>>);
 pub struct PendingDataUrl(pub Mutex<Option<String>>);
@@ -27,41 +27,48 @@ fn finish_region_capture(
     let img = state.0.lock().unwrap().take().ok_or("No pending capture")?;
     let cropped = capture::crop_region(&img, x, y, w, h)?;
 
-    match storage::save_screenshot(&cropped) {
-        Ok(path) => log::info!("Region screenshot saved to {}", path.display()),
-        Err(e) => log::error!("Save failed: {e}"),
-    }
+    let path = storage::save_screenshot(&cropped).map_err(|e| format!("Save failed: {e}"))?;
     if let Err(e) = clipboard::copy_image_to_clipboard(&cropped) {
         log::error!("Clipboard failed: {e}");
     }
 
-    use tauri_plugin_notification::NotificationExt;
-    let _ = app.notification().builder().title("OpenCap").body("Region captured!").show();
-
-    if let Some(win) = app.get_webview_window("overlay") {
-        let _ = win.close();
-    }
+    let _ = open::that(&path);
+    app.exit(0);
     Ok(())
 }
 
 #[tauri::command]
-fn cancel_region_capture(app: tauri::AppHandle, state: tauri::State<PendingCapture>) -> Result<(), String> {
-    *state.0.lock().unwrap() = None;
-    if let Some(win) = app.get_webview_window("overlay") {
-        let _ = win.close();
+fn capture_full_and_finish(
+    app: tauri::AppHandle,
+    state: tauri::State<PendingCapture>,
+) -> Result<(), String> {
+    let img = state.0.lock().unwrap().take().ok_or("No pending capture")?;
+
+    let path = storage::save_screenshot(&img).map_err(|e| format!("Save failed: {e}"))?;
+    if let Err(e) = clipboard::copy_image_to_clipboard(&img) {
+        log::error!("Clipboard failed: {e}");
     }
+
+    let _ = open::that(&path);
+    app.exit(0);
+    Ok(())
+}
+
+#[tauri::command]
+fn cancel_region_capture(app: tauri::AppHandle) -> Result<(), String> {
+    app.exit(0);
     Ok(())
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
-        .plugin(tauri_plugin_notification::init())
         .manage(PendingCapture(Mutex::new(None)))
         .manage(PendingDataUrl(Mutex::new(None)))
         .invoke_handler(tauri::generate_handler![
             get_pending_data_url,
             finish_region_capture,
+            capture_full_and_finish,
             cancel_region_capture,
         ])
         .setup(|app| {
@@ -73,11 +80,22 @@ pub fn run() {
                 )?;
             }
 
-            tray::setup_tray(app.handle())?;
+            // Capture BEFORE any window exists — guaranteed clean
+            let img = capture::capture_full_screen()?;
+            let data_url = capture::image_to_base64_png(&img)?;
 
-            if let Some(window) = app.get_webview_window("main") {
-                let _ = window.hide();
-            }
+            *app.state::<PendingCapture>().0.lock().unwrap() = Some(img);
+            *app.state::<PendingDataUrl>().0.lock().unwrap() = Some(data_url);
+
+            // NOW create the overlay window
+            WebviewWindowBuilder::new(app, "main", tauri::WebviewUrl::App("index.html".into()))
+                .fullscreen(true)
+                .decorations(false)
+                .always_on_top(true)
+                .transparent(true)
+                .title("OpenCap")
+                .build()
+                .map_err(|e| format!("Window creation failed: {e}"))?;
 
             Ok(())
         })

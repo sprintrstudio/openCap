@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OpenCap - Lightweight Screenshot Tool</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      color: #1a1a2e;
+      background: #fafafe;
+      line-height: 1.6;
+    }
+
+    .hero {
+      text-align: center;
+      padding: 80px 24px 60px;
+      background: linear-gradient(135deg, #4F46E5, #7C3AED);
+      color: white;
+    }
+
+    .hero h1 {
+      font-size: 3rem;
+      font-weight: 700;
+      margin-bottom: 12px;
+    }
+
+    .hero p {
+      font-size: 1.25rem;
+      opacity: 0.9;
+      max-width: 500px;
+      margin: 0 auto 40px;
+    }
+
+    .buttons {
+      display: flex;
+      gap: 16px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      display: inline-block;
+      padding: 14px 32px;
+      border-radius: 8px;
+      text-decoration: none;
+      font-size: 1.1rem;
+      font-weight: 600;
+      transition: transform 0.15s, box-shadow 0.15s;
+    }
+
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(0,0,0,0.2);
+    }
+
+    .btn-primary {
+      background: white;
+      color: #4F46E5;
+    }
+
+    .btn-secondary {
+      background: rgba(255,255,255,0.15);
+      color: white;
+      border: 2px solid rgba(255,255,255,0.4);
+    }
+
+    .features {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 32px;
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 80px 24px;
+    }
+
+    .feature {
+      text-align: center;
+    }
+
+    .feature-icon {
+      font-size: 2.5rem;
+      margin-bottom: 12px;
+    }
+
+    .feature h3 {
+      font-size: 1.15rem;
+      margin-bottom: 8px;
+    }
+
+    .feature p {
+      color: #555;
+      font-size: 0.95rem;
+    }
+
+    .opensource {
+      text-align: center;
+      padding: 60px 24px;
+      background: #f0eeff;
+    }
+
+    .opensource h2 {
+      font-size: 1.8rem;
+      margin-bottom: 12px;
+    }
+
+    .opensource p {
+      color: #555;
+      max-width: 500px;
+      margin: 0 auto 24px;
+    }
+
+    .opensource a {
+      color: #4F46E5;
+      font-weight: 600;
+    }
+
+    footer {
+      text-align: center;
+      padding: 32px 24px;
+      color: #888;
+      font-size: 0.85rem;
+    }
+
+    footer a { color: #4F46E5; }
+  </style>
+</head>
+<body>
+
+  <section class="hero">
+    <h1>OpenCap</h1>
+    <p>A lightweight, private, open-source screenshot tool. Only ~15 MB installed. No accounts, no cloud, no telemetry &mdash; just fast screenshots.</p>
+    <div class="buttons">
+      <a href="https://github.com/sprintrstudio/openCap/releases/latest" class="btn btn-primary">Download for Free</a>
+      <a href="https://github.com/sprintrstudio/openCap" class="btn btn-secondary">View on GitHub</a>
+    </div>
+  </section>
+
+  <section class="features">
+    <div class="feature">
+      <div class="feature-icon">&#9986;</div>
+      <h3>Region Capture</h3>
+      <p>Click and drag to select any area of your screen. Pixel-perfect selection every time.</p>
+    </div>
+    <div class="feature">
+      <div class="feature-icon">&#128247;</div>
+      <h3>Full Screen Capture</h3>
+      <p>Right-click to instantly grab your entire screen. No menus, no delay.</p>
+    </div>
+    <div class="feature">
+      <div class="feature-icon">&#128203;</div>
+      <h3>Auto Clipboard</h3>
+      <p>Screenshots are automatically copied to your clipboard and saved to your Pictures folder.</p>
+    </div>
+  </section>
+
+  <section class="opensource">
+    <h2>Open Source &amp; Private</h2>
+    <p>OpenCap is MIT licensed and 100% open source. Your screenshots never leave your computer &mdash; no cloud uploads, no analytics, no tracking. Every line of code is public and auditable.</p>
+    <a href="https://github.com/sprintrstudio/openCap">View the source code on GitHub &rarr;</a>
+  </section>
+
+  <footer>
+    <p>Made by <a href="https://github.com/sprintrstudio">sprintrstudio</a> &middot; MIT License</p>
+  </footer>
+
+</body>
+</html>

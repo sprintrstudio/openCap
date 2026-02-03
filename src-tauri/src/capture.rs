@@ -15,12 +15,6 @@ pub fn capture_full_screen() -> Result<RgbaImage, String> {
     let rgba = RgbaImage::from_raw(img.width(), img.height(), img.into_raw())
         .ok_or("Failed to convert capture to image")?;
 
-    // screenshots crate returns BGRA on Windows — convert to RGBA
-    let mut rgba = rgba;
-    for pixel in rgba.chunks_exact_mut(4) {
-        pixel.swap(0, 2);
-    }
-
     Ok(rgba)
 }
 

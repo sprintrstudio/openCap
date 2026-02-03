@@ -11,6 +11,11 @@
   let mouseX = $state(0);
   let mouseY = $state(0);
 
+  // Screen layout info for multi-monitor support
+  let monitors = $state([]);
+  let originX = $state(0);
+  let originY = $state(0);
+
   // Derived selection rectangle
   let selX = $derived(Math.min(startX, curX));
   let selY = $derived(Math.min(startY, curY));
@@ -20,11 +25,28 @@
   onMount(async () => {
     try {
       backgroundUrl = await invoke("get_pending_data_url");
+      const layout = await invoke("get_screen_layout");
+      monitors = layout.monitors;
+      originX = layout.origin_x;
+      originY = layout.origin_y;
     } catch (e) {
       console.error("Failed to get screenshot:", e);
       await invoke("cancel_region_capture");
     }
   });
+
+  /** Find which monitor index contains the given CSS coordinate */
+  function getMonitorAt(cssX, cssY) {
+    for (let i = 0; i < monitors.length; i++) {
+      const m = monitors[i];
+      const mx = m.x - originX;
+      const my = m.y - originY;
+      if (cssX >= mx && cssX < mx + m.width && cssY >= my && cssY < my + m.height) {
+        return i;
+      }
+    }
+    return -1;
+  }
 
   function onKeyDown(e) {
     if (e.key === "Escape") {
@@ -57,13 +79,12 @@
     if (selW < 5 || selH < 5) return; // ignore tiny selections
 
     try {
-      // Account for device pixel ratio for HiDPI
-      const dpr = window.devicePixelRatio || 1;
+      // Composite is in logical pixel space matching CSS pixels — no DPR scaling needed
       await invoke("finish_region_capture", {
-        x: Math.round(selX * dpr),
-        y: Math.round(selY * dpr),
-        w: Math.round(selW * dpr),
-        h: Math.round(selH * dpr),
+        x: Math.round(selX),
+        y: Math.round(selY),
+        w: Math.round(selW),
+        h: Math.round(selH),
       });
     } catch (e) {
       console.error("Region capture failed:", e);
@@ -73,9 +94,21 @@
   async function onContextMenu(e) {
     e.preventDefault();
     try {
-      await invoke("capture_full_and_finish");
+      if (e.ctrlKey) {
+        // Ctrl+Right-click: capture all monitors
+        await invoke("capture_full_and_finish");
+      } else {
+        // Right-click: capture just this monitor
+        const idx = getMonitorAt(e.clientX, e.clientY);
+        if (idx >= 0) {
+          await invoke("finish_monitor_capture", { monitorIndex: idx });
+        } else {
+          // Cursor in a gap between monitors — fall back to all monitors
+          await invoke("capture_full_and_finish");
+        }
+      }
     } catch (err) {
-      console.error("Full capture failed:", err);
+      console.error("Capture failed:", err);
     }
   }
 </script>
@@ -105,14 +138,14 @@
   <!-- Size indicator -->
   {#if selecting && selW > 0 && selH > 0}
     <div class="size-label" style="left:{selX}px; top:{selY + selH + 4}px;">
-      {Math.round(selW * (window.devicePixelRatio || 1))} x {Math.round(selH * (window.devicePixelRatio || 1))}
+      {Math.round(selW)} x {Math.round(selH)}
     </div>
   {/if}
 
   <!-- Floating tooltip -->
   {#if !selecting}
     <div class="tooltip" style="left:{mouseX + 16}px; top:{mouseY + 16}px;">
-      Drag to select region &bull; Right-click for full screen &bull; ESC to cancel
+      Drag to select region &bull; Right-click for this monitor &bull; Ctrl+Right-click for all monitors &bull; ESC to cancel
     </div>
   {/if}
 </div>
@@ -121,8 +154,8 @@
   .overlay {
     position: fixed;
     inset: 0;
-    background-size: cover;
-    background-position: center;
+    background-size: 100% 100%;
+    background-position: top left;
     cursor: crosshair;
     user-select: none;
   }

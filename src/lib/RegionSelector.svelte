@@ -33,7 +33,6 @@
       originY = layout.origin_y;
       virtualWidth = layout.virtual_width;
       virtualHeight = layout.virtual_height;
-      console.log("Layout:", { originX, originY, virtualWidth, virtualHeight, monitors });
     } catch (e) {
       console.error("Failed to get screenshot:", e);
       await invoke("cancel_region_capture");

@@ -2,5 +2,11 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 fn main() {
-  app_lib::run();
+    let args: Vec<String> = std::env::args().collect();
+
+    if args.iter().any(|arg| arg == "--settings") {
+        app_lib::run_settings();
+    } else {
+        app_lib::run();
+    }
 }

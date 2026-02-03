@@ -1,6 +1,11 @@
 mod capture;
 mod clipboard;
+mod config;
+mod programs;
+mod settings_lib;
 mod storage;
+
+pub use settings_lib::run_settings;
 
 use image::RgbaImage;
 use std::sync::Mutex;
@@ -47,13 +52,27 @@ fn finish_region_capture(
 ) -> Result<(), String> {
     let img = state.0.lock().unwrap().take().ok_or("No pending capture")?;
     let cropped = capture::crop_region(&img, x, y, w, h)?;
+    let cfg = config::load_config();
 
-    let path = storage::save_screenshot(&cropped).map_err(|e| format!("Save failed: {e}"))?;
-    if let Err(e) = clipboard::copy_image_to_clipboard(&cropped) {
-        log::error!("Clipboard failed: {e}");
+    let mut saved_path = None;
+    if cfg.save_locally {
+        let path = storage::save_screenshot(&cropped, cfg.save_path.as_deref())
+            .map_err(|e| format!("Save failed: {e}"))?;
+        saved_path = Some(path);
     }
 
-    let _ = open::that(&path);
+    if cfg.copy_to_clipboard {
+        if let Err(e) = clipboard::copy_image_to_clipboard(&cropped) {
+            log::error!("Clipboard failed: {e}");
+        }
+    }
+
+    if cfg.auto_open {
+        if let Some(path) = &saved_path {
+            open_with_program(path, &cfg.open_with_program);
+        }
+    }
+
     app.exit(0);
     Ok(())
 }
@@ -85,13 +104,27 @@ fn finish_monitor_capture(
     let x = (mon.x - layout.origin_x) as u32;
     let y = (mon.y - layout.origin_y) as u32;
     let cropped = capture::crop_region(&img, x, y, mon.width, mon.height)?;
+    let cfg = config::load_config();
 
-    let path = storage::save_screenshot(&cropped).map_err(|e| format!("Save failed: {e}"))?;
-    if let Err(e) = clipboard::copy_image_to_clipboard(&cropped) {
-        log::error!("Clipboard failed: {e}");
+    let mut saved_path = None;
+    if cfg.save_locally {
+        let path = storage::save_screenshot(&cropped, cfg.save_path.as_deref())
+            .map_err(|e| format!("Save failed: {e}"))?;
+        saved_path = Some(path);
     }
 
-    let _ = open::that(&path);
+    if cfg.copy_to_clipboard {
+        if let Err(e) = clipboard::copy_image_to_clipboard(&cropped) {
+            log::error!("Clipboard failed: {e}");
+        }
+    }
+
+    if cfg.auto_open {
+        if let Some(path) = &saved_path {
+            open_with_program(path, &cfg.open_with_program);
+        }
+    }
+
     app.exit(0);
     Ok(())
 }
@@ -102,15 +135,51 @@ fn capture_full_and_finish(
     state: tauri::State<PendingCapture>,
 ) -> Result<(), String> {
     let img = state.0.lock().unwrap().take().ok_or("No pending capture")?;
+    let cfg = config::load_config();
 
-    let path = storage::save_screenshot(&img).map_err(|e| format!("Save failed: {e}"))?;
-    if let Err(e) = clipboard::copy_image_to_clipboard(&img) {
-        log::error!("Clipboard failed: {e}");
+    let mut saved_path = None;
+    if cfg.save_locally {
+        let path = storage::save_screenshot(&img, cfg.save_path.as_deref())
+            .map_err(|e| format!("Save failed: {e}"))?;
+        saved_path = Some(path);
     }
 
-    let _ = open::that(&path);
+    if cfg.copy_to_clipboard {
+        if let Err(e) = clipboard::copy_image_to_clipboard(&img) {
+            log::error!("Clipboard failed: {e}");
+        }
+    }
+
+    if cfg.auto_open {
+        if let Some(path) = &saved_path {
+            open_with_program(path, &cfg.open_with_program);
+        }
+    }
+
     app.exit(0);
     Ok(())
+}
+
+fn open_with_program(path: &std::path::Path, program: &str) {
+    if program == "default" || program.is_empty() {
+        let _ = open::that(path);
+    } else {
+        #[cfg(target_os = "windows")]
+        {
+            let _ = std::process::Command::new(program).arg(path).spawn();
+        }
+        #[cfg(target_os = "macos")]
+        {
+            let _ = std::process::Command::new("open")
+                .args(["-a", program])
+                .arg(path)
+                .spawn();
+        }
+        #[cfg(target_os = "linux")]
+        {
+            let _ = std::process::Command::new(program).arg(path).spawn();
+        }
+    }
 }
 
 #[tauri::command]

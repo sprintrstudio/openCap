@@ -15,6 +15,8 @@
   let monitors = $state([]);
   let originX = $state(0);
   let originY = $state(0);
+  let virtualWidth = $state(0);
+  let virtualHeight = $state(0);
 
   // Derived selection rectangle
   let selX = $derived(Math.min(startX, curX));
@@ -29,6 +31,9 @@
       monitors = layout.monitors;
       originX = layout.origin_x;
       originY = layout.origin_y;
+      virtualWidth = layout.virtual_width;
+      virtualHeight = layout.virtual_height;
+      console.log("Layout:", { originX, originY, virtualWidth, virtualHeight, monitors });
     } catch (e) {
       console.error("Failed to get screenshot:", e);
       await invoke("cancel_region_capture");
@@ -118,7 +123,7 @@
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <div
   class="overlay"
-  style="background-image: url({backgroundUrl})"
+  style="background-image: url({backgroundUrl}); width: {virtualWidth}px; height: {virtualHeight}px;"
   onmousedown={onMouseDown}
   onmousemove={onMouseMove}
   onmouseup={onMouseUp}
@@ -153,7 +158,9 @@
 <style>
   .overlay {
     position: fixed;
-    inset: 0;
+    top: 0;
+    left: 0;
+    /* width and height set via inline style from layout */
     background-size: 100% 100%;
     background-position: top left;
     cursor: crosshair;

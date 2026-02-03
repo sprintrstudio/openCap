@@ -144,6 +144,22 @@ pub fn run() {
 
             // Capture all screens before any window exists — guaranteed clean
             let composite = capture::capture_all_screens()?;
+
+            // Debug: log virtual desktop bounds for multi-monitor troubleshooting
+            log::info!(
+                "Virtual desktop: origin=({}, {}), size={}x{}, monitors={}",
+                composite.origin_x,
+                composite.origin_y,
+                composite.virtual_width,
+                composite.virtual_height,
+                composite.monitors.len()
+            );
+            for (i, mon) in composite.monitors.iter().enumerate() {
+                log::info!(
+                    "  Monitor {}: pos=({}, {}), size={}x{}, scale={}",
+                    i, mon.x, mon.y, mon.width, mon.height, mon.scale_factor
+                );
+            }
             let data_url = capture::image_to_base64_png(&composite.image)?;
 
             let layout = ScreenLayout {
@@ -162,10 +178,13 @@ pub fn run() {
             WebviewWindowBuilder::new(app, "main", tauri::WebviewUrl::App("index.html".into()))
                 .position(composite.origin_x as f64, composite.origin_y as f64)
                 .inner_size(composite.virtual_width as f64, composite.virtual_height as f64)
+                .min_inner_size(composite.virtual_width as f64, composite.virtual_height as f64)
+                .resizable(false)
                 .decorations(false)
                 .always_on_top(true)
                 .transparent(true)
                 .skip_taskbar(true)
+                .focused(true)
                 .title("OpenCap")
                 .build()
                 .map_err(|e| format!("Window creation failed: {e}"))?;
